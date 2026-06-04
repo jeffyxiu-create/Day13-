@@ -3,38 +3,25 @@
 零基础转Python&AI方向,本仓库为个人实战项目作品集,记录从0开始落地的完整商用小项目.
 
 ## Project List
-### Customer Assistant V3
-## 项目介绍
-这是一款Python产现的企业客服自动化系统v3Demo
+### Project1 客户投诉管理系统 Customer Complaint Management System
 
-## 技术栈
+**技术栈**
 -Python
 -TKinter(GUI界面)
 -AI Prompt 工程
 -自动化处理
 -AI API 调用
 
-##a项目结构
-'''
-day10_enterprise_demo/
-├app.py
-├ui.py
-├file_loader.py
-├relpy_engine.py
-┕result_save.py
-'''
-##
-使用愿意付出
-1.环境要求:安装Python
-2.终端进入项目根目录，运行:
-'''bash
-python app.py
-'''
-3.上传complaint.txt投诉文件
-4.系统自动读取内容，生成回复，保存结果文件
+**功能简介**
+- 单条投诉手动录入，自动分类+自动生成售后回复
+- 支持TXT文档批量导入，批量处理多条投诉工单
+- 全部处理数据自动保存至CSV表格，方便统计归档
+- Tkinter可视化GUI窗口，免命令行操作
 
-##项目目标
-练习Python工程化开发，AI自动化落地。桌面GUI开发，打造可展示的实战项目。
+## Future Projects
+Project2：AI内容助手（待开发）
+Project3：AI数据分析工具（待开发）
+Project4：简易AI Agent（待开发
 
 
 
