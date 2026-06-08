@@ -1,0 +1,9 @@
+from pypdf import PdfReader
+def read_pdf(file_path):
+    reader = PdfReader(file_path)
+    all_text = ""
+    for page in reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            all_text += page_text
+    return all_text
