@@ -1,7 +1,11 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-load_dotenv()
+from pathlib import Path
+root_path = Path(__file__).resolve().parent.parent
+env_path = root_path/".env"
+load_dotenv(env_path)
+
 API_KEY=os.getenv("API_KEY")
 BASE_URL=os.getenv("BASE_URL")
 MODEL="deepseek-ai/DeepSeek-V3"
