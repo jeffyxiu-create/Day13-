@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox,ttk
 import threading
 import pyperclip
-from ai_helper import generate_email
+from ai_helper import get_ai_email
 import os
 
 root = tk.Tk()
@@ -102,7 +102,7 @@ def set_status(msg, color="black"):
 def _do_generate(user_text):
     """子线程执行AI调用,防止UI卡死"""
     try:
-        email_text = generate_email(user_text)
+        email_text = get_ai_email(user_text)
         root.after(0,lambda: _show_result(email_text))
     except Exception as e :
         root.after(0, lambda: _show_error(str(e)))
