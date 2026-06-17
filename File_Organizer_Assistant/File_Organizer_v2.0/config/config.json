@@ -1,0 +1,16 @@
+{
+    "type_rules": {
+        "PDF": [".pdf"],
+        "Word": [".doc", ".docx"],
+        "Excel": [".xls", ".xlsx"],
+        "PPT": [".ppt", ".pptx"],
+        "Image": [".jpg", ".jpeg", ".png", ".gif", ".bmp"],
+        "Video": [".mp4", ".avi", ".mov"],
+        "Archive": [".zip", ".rar", ".7z"],
+        "Text": [".txt", ".md"]
+    },
+    "size_split": {
+        "small": 1048576,
+        "medium": 10485760
+    }
+}
