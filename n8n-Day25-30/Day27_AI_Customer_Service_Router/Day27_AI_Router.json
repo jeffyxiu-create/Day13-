@@ -1,0 +1,361 @@
+{
+  "name": "Day27_AI_Router",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        32
+      ],
+      "id": "cfaba42a-3f2b-4ea6-8d5f-5432fed197c1",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "15eaa0c0-bde6-4938-8ce1-11e2e347de86",
+              "name": "customer_message",
+              "value": "我需要一张增值税发票",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -160,
+        -208
+      ],
+      "id": "fb8a5f8e-02ee-4733-bc82-4746822599c6",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-ai/DeepSeek-V3\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"你是一个企业客服分类系统。\\n\\n请判断下面这个客户问题属于哪个部门，只能回答以下三个选项之一，不要有任何其他文字：\\n- logistics（物流问题：快递、发货、运输、到货）\\n- aftersales（售后问题：退款、换货、维修、投诉）\\n- finance（财务问题：账单、发票、付款、价格）\\n\\n客户问题：{{ $json.customer_message }}\"\n    }\n  ],\n  \"temperature\": 0.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -48,
+        32
+      ],
+      "id": "b0de187a-9fd7-45eb-a0dc-887432bebcd1",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da7ec8ea-8a15-4627-ad48-eaacc9c0b916",
+              "name": "department",
+              "value": "={{ $json.choices[0].message.content.trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "870e2d0f-c6b8-4ab9-9f99-e5b86a07247c",
+              "name": "original_message",
+              "value": "={{ $('Edit Fields').first().json.customer_message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        -208
+      ],
+      "id": "c09f902e-1756-4606-ac24-e59ebb426b19",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "logistics",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f3f7600d-6528-4cbc-8abe-5a27b87a77d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "物流"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9ad81b8a-9653-4c09-8298-e0dcf89abccf",
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "aftersales",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "售后"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "555bbdeb-366b-46d6-b681-60bc76571af8",
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "finance",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "财务"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        32
+      ],
+      "id": "76d76bbb-15c0-44de-b376-c43b13026132",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e48f1136-72ab-471e-b13a-9649cac914c5",
+              "name": "reply",
+              "value": "您好，您的问题已转接至【物流部门】，我们将在24小时内核查快递状态并回复您。",
+              "type": "string"
+            },
+            {
+              "id": "a5015550-1dfb-4598-8862-101ac51e1dfd",
+              "name": "handled_by",
+              "value": "logistics_team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        368,
+        -192
+      ],
+      "id": "886af509-af5c-4abe-9516-773927f6a9db",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c8eccff-bb67-4698-a18d-01a9fedd2cc0",
+              "name": "reply",
+              "value": "您好，您的问题已转接至【售后部门】，退换货申请将在48小时内处理完毕。",
+              "type": "string"
+            },
+            {
+              "id": "1b73932b-5593-4749-b72b-b41c88d8a004",
+              "name": "handled_by",
+              "value": "aftersales_team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        368,
+        -16
+      ],
+      "id": "30658cc9-296d-43bd-b183-f7d873fc08d9",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3dbf16a8-d198-403b-8bfa-acb3426a6e46",
+              "name": "reply",
+              "value": "您好，您的问题已转接至【财务部门】，退换货申请将在48小时内处理完毕。",
+              "type": "string"
+            },
+            {
+              "id": "03268dc4-fee4-4780-9d2d-961f701bd950",
+              "name": "handled_by",
+              "value": "finance_team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        368,
+        192
+      ],
+      "id": "67250298-5ea9-4b33-9295-fefd9ed3623b",
+      "name": "Edit Fields4"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ca71c0c8-2463-4d5a-a44f-e012a1fe3326",
+  "meta": {
+    "instanceId": "b807bf20aa85a77912efeca2be7d03e5fe393521578d509d8cfa93dddabfbec9"
+  },
+  "nodeGroups": [],
+  "id": "LeauCuKV8HDvjaW3",
+  "tags": []
+}

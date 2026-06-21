@@ -1,0 +1,74 @@
+{
+  "name": "Day29_AI_Webhook_Service",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "customer-service",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -368,
+        16
+      ],
+      "id": "d84e385d-d607-4a9b-a2b6-0563e0516ddf",
+      "name": "Webhook",
+      "webhookId": "28c79bbb-2bab-42aa-96a1-c7382ca4479c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\":\"deepseek-ai/DeepSeek-V3\",\n  \"messages\":[\n    {\n      \"role\":\"system\",\n      \"content\":\"你是客服，请直接回答用户问题，100字以内。\"\n    },\n    {\n      \"role\":\"user\",\n      \"content\":\"={{ $('Webhook').first().json.body.message }}\"\n    }\n  ],\n  \"temperature\":0.3\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -144,
+        16
+      ],
+      "id": "646944b1-f249-4e74-8bae-471c16dea603",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d9bdea99-275a-4437-b378-faebfab11e92",
+  "meta": {
+    "instanceId": "b807bf20aa85a77912efeca2be7d03e5fe393521578d509d8cfa93dddabfbec9"
+  },
+  "nodeGroups": [],
+  "id": "6IkI5lC1Wbz4yTVq",
+  "tags": []
+}
