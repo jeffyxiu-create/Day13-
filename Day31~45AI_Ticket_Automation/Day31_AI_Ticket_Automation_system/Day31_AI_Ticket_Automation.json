@@ -1,0 +1,157 @@
+{
+  "name": "Day31_AI_Ticket_Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tickt_system",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a9261932-038b-4a8f-9bc2-2fdf90b40b63",
+      "name": "Webhook",
+      "webhookId": "f8f44b4f-7314-474c-84d8-55be92d2d821"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"model\": \"deepseek-ai/DeepSeek-V3\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"你是一套企业工单自动化系统,请根据用户问题判断分成下面几类:格式：{\\\"category\\\":\\\"\\\",\\\"priority\\\":\\\"\\\",\\\"department\\\":\\\"\\\",\\\"suggestion\\\":\\\"\\\"} 优先级只能填：低、中、高、紧急\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"={{ $json.body.message }}\"\n    }\n  ],\n  \"temperature\": 0.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "53155045-96dc-4ad3-81e2-6a81e249c9af",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2e8266b-8a44-4a2e-8cf9-fa5f9063ec6d",
+              "name": "category",
+              "value": "={{ JSON.parse($json.choices[0].message.content.replace(/```json/g, '').replace(/```/g, '').trim()).category }}",
+              "type": "string"
+            },
+            {
+              "id": "d697ad4e-bcad-4807-9051-e7a75df84a74",
+              "name": "priority",
+              "value": "={{\nJSON.parse($json.choices[0].message.content.replace(/```json/g, '').replace(/```/g,'').trim()).priority}}",
+              "type": "string"
+            },
+            {
+              "id": "d470dbde-e0f3-4e69-b296-a77bf61ff077",
+              "name": "department",
+              "value": "={{JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).department }}",
+              "type": "string"
+            },
+            {
+              "id": "7a4852a0-d083-47dc-832c-de747e8a81c0",
+              "name": "suggestion",
+              "value": "={{\nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).suggestion }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "cbdd8896-4e95-4410-8f50-d43283a55ade",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        0
+      ],
+      "id": "af33221a-d9d3-4251-87d4-a58e3745b7e2",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "dee5741a-59ff-449e-8f4d-b24feefdb521",
+  "meta": {
+    "instanceId": "b807bf20aa85a77912efeca2be7d03e5fe393521578d509d8cfa93dddabfbec9"
+  },
+  "nodeGroups": [],
+  "id": "c9wqm1UY52gcgqF6",
+  "tags": []
+}

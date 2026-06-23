@@ -1,0 +1,452 @@
+{
+  "name": "Day30_AI_Enterprise_Automation_Hub",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "enterprise-service",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        80
+      ],
+      "id": "e0c9e6e6-4ddc-42c9-a047-d4c47259e909",
+      "name": "Webhook",
+      "webhookId": "f6f25b5a-ddd5-4f0b-9383-be15552ee61b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\":\"deepseek-ai/DeepSeek-V3\",\n  \"messages\":[\n    {\n      \"role\":\"system\",\n      \"content\":\"你是一名企业客服分类助手.请判断用户问题属于哪个类别,只能返回以下三个词之一,不能有任何其它文字:物流、售后、财务。\"\n    },\n    {\n      \"role\":\"user\",\n      \"content\":\"={{ $json.body.message}}\"\n    }\n  ],\n  \"temperature\":0.1\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        80
+      ],
+      "id": "ca767f2d-d92d-4341-9a4a-ef6717f54848",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e59e100c-182f-4079-ad2b-2b4e29de0110",
+              "name": "category",
+              "value": "={{ $json.choices[0].message.content.trim()}}",
+              "type": "string"
+            },
+            {
+              "id": "ac7fa776-5a51-4b04-be09-36634255a222",
+              "name": "original_message",
+              "value": "={{ $('Webhook').first().json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        80
+      ],
+      "id": "ad5e2b67-aea1-4aaf-814c-112b04ab1482",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category}}",
+                    "rightValue": "物流",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a409caec-7034-4e4c-8c85-d253a62ecef6"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "97596e64-74e7-4350-abd1-40b5cb2cf81b",
+                    "leftValue": "={{ $json.category}}",
+                    "rightValue": "售后",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2d422ecd-99af-4dac-b386-0498434a4c2b",
+                    "leftValue": "={{ $json.category}}",
+                    "rightValue": "财务",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        64
+      ],
+      "id": "4a4db1e5-feb7-4bbb-86ea-7398eb4530f5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-ai/DeepSeek-V3\",\n  \"messages\": [ \n    {\n      \"role\": \"system\",\n      \"content\": \"你是一名专业物流客服，专门处理快递配送、发货、运输相关问题,请用中文礼貌回复,控制在100字以内。\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.original_message }}\"\n    }\n  ],\n\"temperature\":0.3\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        -112
+      ],
+      "id": "70e90642-d6db-4139-8170-8adea3474c5b",
+      "name": "HTTP Request1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2c6dfae4-b0ee-4bec-9087-e348c671a4ba",
+              "name": "reply",
+              "value": "={{ $json.choices[0].message.content.trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "f3e566e0-948b-4910-994e-7204870b27d9",
+              "name": "category",
+              "value": "物流",
+              "type": "string"
+            },
+            {
+              "id": "6e34cb8f-89f3-4fbf-a7a2-0e6fdc793580",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        -112
+      ],
+      "id": "1ff0cd8a-7372-473d-a4d4-0a225427a23b",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"model\":\"deepseek-ai/DeepSeek-V3\",\n\"messages\":[\n{\n\"role\":\"system\",\n\"content\":\"你是一名专业的售后客服,专门处理退款、换货、维修、投诉相关问题,请用中文礼貌回复,控制在100字以内.\"\n},\n{\n\"role\":\"user\",\n\"content\":\"{{ $('Edit Fields').first().json.original_message.trim()}}\"\n}\n],\n\"temperature\":0.3\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        80
+      ],
+      "id": "e8cd5e91-bb07-4371-8ee5-f89dd95806b4",
+      "name": "HTTP Request2",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9346717a-b8d8-4702-bddf-7bf9d700ebc7",
+              "name": "reply",
+              "value": "={{ $json.choices[0].message.content.trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "9a499a6a-09b1-4350-bac3-f76e80303d82",
+              "name": "category",
+              "value": "售后",
+              "type": "string"
+            },
+            {
+              "id": "c422fc66-0537-43e2-a555-3f1f071880ea",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        80
+      ],
+      "id": "26f730b8-0e59-4661-a398-00d6782568c8",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"model\":\"deepseek-ai/DeepSeek-V3\",\n\"messages\":[\n{\n\"role\":\"system\",\n\"content\":\"你是一名专业的财务客服,专门处理账单、发票、付款、价格相关问题,请用中文礼貌回复,控制在100字以内.\"\n},\n{\n\"role\":\"user\",\n\"content\":\"{{ $('Edit Fields').first().json.original_message}}\"\n}\n],\n\"temperature\":0.3\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        272
+      ],
+      "id": "72bbf0c3-0f69-4e9b-b075-b41138e2e0b8",
+      "name": "HTTP Request3",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f2936831-cad8-4f2c-90fc-d439cd30d630",
+              "name": "reply",
+              "value": "={{ $json.choices[0].message.content.trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "cbeebecb-9670-4eac-b137-2bf27361a26a",
+              "name": "category",
+              "value": "财务",
+              "type": "string"
+            },
+            {
+              "id": "48736500-ddf4-4dd7-bde5-e62572db3cf8",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        272
+      ],
+      "id": "6ec3ca6b-1cbb-43b7-948b-d9f6533eb473",
+      "name": "Edit Fields3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f9612509-17aa-445b-adcd-1324e6507dd0",
+  "meta": {
+    "instanceId": "b807bf20aa85a77912efeca2be7d03e5fe393521578d509d8cfa93dddabfbec9"
+  },
+  "nodeGroups": [],
+  "id": "wACO2ZPzLfuCr73i",
+  "tags": []
+}
