@@ -1,43 +1,115 @@
-# Day30 — 企业自动化中枢（Project1 毕业项目）
+# AI Ticket Automation System
 
-## 工作流结构
-Webhook（外部入口）
-→ HTTP Request（AI 分类）
-→ Edit Fields（提取 category）
-→ Switch（分流）
-  → 物流 → HTTP Request（AI回复）→ Edit Fields（格式化）
-  → 售后 → HTTP Request（AI回复）→ Edit Fields（格式化）
-  → 财务 → HTTP Request（AI回复）→ Edit Fields（格式化）
+## 项目简介
 
-## Webhook 配置
-- Method：POST
-- Path：enterprise-service
-- Test URL：https://jeffyxiu.app.n8n.cloud/webhook-test/enterprise-service
+企业工单自动化系统。
 
-## 标准输出格式
+通过 n8n + SiliconFlow + DeepSeek 实现：
+
+用户提交问题
+↓
+AI分析
+↓
+自动生成工单
+↓
+输出处理建议
+
+---
+
+## 技术栈
+
+- n8n
+- HTTP Request
+- SiliconFlow API
+- DeepSeek
+- Webhook
+
+---
+
+## 项目结构
+
+```text
+Day31_AI_Ticket_Automation_System/
+
+├── workflow.json
+├── prompt_library.txt
+├── test_data.json
+├── README.md
+└── screenshots/
+```
+
+---
+
+## 工作流架构
+
+```text
+Webhook
+↓
+DeepSeek分析
+↓
+Edit Fields
+↓
+Respond To Webhook
+```
+
+---
+
+## AI分析内容
+
+自动生成：
+
+- 分类
+- 优先级
+- 处理部门
+- 处理建议
+
+---
+
+## 测试案例
+
+### 案例1
+
+输入：
+
+我的订单已经10天没有发货了
+
+输出：
+
+```json
 {
-  "reply": "AI 生成的专业回复",
-  "category": "物流 / 售后 / 财务",
-  "status": "success"
+  "category": "物流",
+  "priority": "高",
+  "department": "客服部",
+  "suggestion": "立即核查订单状态"
 }
+```
 
-## Project1 完整技术栈总结
+### 案例2
 
-| 技术 | 用途 | 从哪天开始用 |
-|------|------|-------------|
-| Manual Trigger | 手动启动工作流 | Day25 |
-| Edit Fields | 设置和提取字段 | Day25 |
-| HTTP Request | 调用外部 API | Day26 |
-| SiliconFlow API | AI 模型服务 | Day26 |
-| Switch | 条件分流 | Day27 |
-| Webhook | 接收外部请求 | Day29 |
-| system prompt | 定义 AI 角色 | Day28 |
+输入：
 
-## 核心表达式总结
+我要申请退款
 
-| 用途 | 写法 |
-|------|------|
-| 取 Webhook 数据 | {{ $json.bady.message }} |
-| 取 AI 回复内容 | {{ $json.choices[0].message.content.trim() }} |
-| 跨节点取数据 | {{ $('Edit Fields').first().json.original_message }} |
-| 取 Webhook 原始数据 | {{ $('Webhook').first().json.body.message }} |
+输出：
+
+```json
+{
+  "category": "售后",
+  "priority": "中",
+  "department": "售后部",
+  "suggestion": "核实订单信息后处理退款"
+}
+```
+
+---
+
+## 项目亮点
+
+- AI自动分析工单
+- 自动判断优先级
+- 自动推荐处理部门
+- 标准JSON输出
+- 企业自动化场景
+
+---
+

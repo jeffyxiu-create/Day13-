@@ -1,0 +1,19 @@
+{
+    "test_cases": [
+      {
+        "input": {"user": "Jeffy", "message": "我的快递三天了还没到"},
+        "expected_category": "物流",
+        "expected_status": "success"
+      },
+      {
+        "input": {"user": "Jeffy", "message": "我要退款，商品质量有问题"},
+        "expected_category": "售后",
+        "expected_status": "success"
+      },
+      {
+        "input": {"user": "Jeffy", "message": "我需要一张增值税发票"},
+        "expected_category": "财务",
+        "expected_status": "success"
+      }
+    ]
+  }

@@ -1,0 +1,25 @@
+{
+    "test_cases": [
+      {
+        "input": {
+          "user": "Jeffy",
+          "message": "我的订单什么时候发货？"
+        },
+        "expected": "物流相关专业回复"
+      },
+      {
+        "input": {
+          "user": "Jeffy",
+          "message": "我要申请退款"
+        },
+        "expected": "售后相关专业回复"
+      },
+      {
+        "input": {
+          "user": "Jeffy",
+          "message": "我需要开一张增值税发票"
+        },
+        "expected": "财务相关专业回复"
+      }
+    ]
+  }
