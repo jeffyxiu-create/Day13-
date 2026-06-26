@@ -1,24 +1,22 @@
-{
-    "test_cases": [
-      {
-        "input": {"user": "Jeffy", "message": "商品什么时候发货？"},
-        "expected_score": "1",
-        "expected_queue": "普通队列"
-      },
-      {
-        "input": {"user": "Jeffy", "message": "我要申请退款。"},
-        "expected_score": "2",
-        "expected_queue": "售后队列"
-      },
-      {
-        "input": {"user": "Jeffy", "message": "订单已经15天没发货了，请马上处理。"},
-        "expected_score": "3",
-        "expected_queue": "高级客服队列"
-      },
-      {
-        "input": {"user": "Jeffy", "message": "客服态度恶劣，我要投诉并曝光。"},
-        "expected_score": "4",
-        "expected_queue": "主管处理队列"
-      }
-    ]
-  }
+[
+    {
+      "user": "Jeffy",
+      "message": "我的订单已经10天没有发货了"
+    },
+    {
+      "user": "Tom",
+      "message": "我要申请退款"
+    },
+    {
+      "user": "Lucy",
+      "message": "发票什么时候开具"
+    },
+    {
+      "user": "David",
+      "message": "网站无法登录"
+    },
+    {
+      "user": "Mike",
+      "message": "付款成功但订单没有生成"
+    }
+  ]

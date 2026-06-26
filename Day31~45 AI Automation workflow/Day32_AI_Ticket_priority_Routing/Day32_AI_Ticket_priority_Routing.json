@@ -1,0 +1,549 @@
+{
+  "name": "Day32_AI_Ticket_priority_Routing",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-priority",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        144
+      ],
+      "id": "a3842000-55b8-4744-8b19-0e42ecfeb4ff",
+      "name": "Webhook",
+      "webhookId": "9421123a-582a-4602-96c4-3014ed3d9a45"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n\"model\":\"deepseek-ai/DeepSeek-V3\",\n\"messages\":[\n{\n\"role\":\"system\",\n\"content\":\"你是企业工单优先级分析助手.只返回JSON,不返回其它文字.格式{\\\"category\\\":\\\"\\\",\\\"priority\\\":\\\"\\\",\\\"score\\\":\\\"\\\",\\\"department\\\":\\\"\\\",\\\"suggestion\\\":\\\"\\\"}优先级只能填:低、中、高、紧急。score规则：紧急=4（投诉、账号被盗、系统故障），高=3（发货延迟超3天），中=2（退款、退款、），低=1（一般咨询、发货查询、其他）,只返回数字.\"\n},\n{\n\"role\":\"user\",\n\"content\":\"{{ $json.body.message }}\"\n}\n],\n\"temperature\":0.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        144
+      ],
+      "id": "0db8fcaa-53e8-4c92-af8e-c47272c8cfd8",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5a36dc18-44ba-4d03-b6c6-1fd989e1bbbe",
+              "name": "category",
+              "value": "={{ JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).category}}",
+              "type": "string"
+            },
+            {
+              "id": "a0d57ded-e12d-4273-b746-aa2af53ba674",
+              "name": "priority",
+              "value": "={{\nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).priority }}",
+              "type": "string"
+            },
+            {
+              "id": "93fa633c-02a9-4cde-9d0f-991474eb8239",
+              "name": "score",
+              "value": "={{ \nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).score }}",
+              "type": "string"
+            },
+            {
+              "id": "1e5d264f-abc9-4177-a001-8dcf1821c2ad",
+              "name": "department",
+              "value": "={{\nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).department}}",
+              "type": "string"
+            },
+            {
+              "id": "bd78351c-a27c-4219-a39c-1a7a30e999a0",
+              "name": "suggestion",
+              "value": "={{\nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).suggestion }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        144
+      ],
+      "id": "2f2c9493-0fc5-4694-a07b-498276a96378",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "973b1802-98df-4df1-9866-a2ea8cfbae69",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "1",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        144
+      ],
+      "id": "a52cd841-524c-4a94-973d-4a7ad00a54a1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5eb3479e-6cb4-49cf-a21d-8759f25ba7a9",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "2",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        240
+      ],
+      "id": "18c193f2-69a5-4c25-80ff-2ae74d6af323",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1e160f9b-971b-4008-9387-de58016934d7",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "3",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        336
+      ],
+      "id": "6101e6cd-2dd7-4e36-a3b0-94fe0e6330d9",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "690eb3c0-0af0-4277-baec-90d75942a6d4",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "=4",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        432
+      ],
+      "id": "1ac38aea-2d83-405e-b372-35e3a0483943",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "653a1a37-b824-4cbc-aeb0-a77b8b4d055f",
+              "name": "queue",
+              "value": "普通队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        -144
+      ],
+      "id": "18628426-0e55-4f4a-862e-150efdb034be",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "207c10c5-58fe-45be-a78a-38591810640f",
+              "name": "queue",
+              "value": "主管处理队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        432
+      ],
+      "id": "d1742acf-f6d7-4430-9c53-7e769fe0577b",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fbe3b153-6108-46f2-a3de-8690727a9c50",
+              "name": "queue",
+              "value": "售后队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        48
+      ],
+      "id": "66367a59-f93f-4ac0-80df-ba58910f9a9e",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d50c89b9-db88-4a24-a242-254f6a2e7580",
+              "name": "queue",
+              "value": "高级客服队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        240
+      ],
+      "id": "d810c458-dcd9-4a61-a52e-ccf762e629d0",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        -144
+      ],
+      "id": "725f6b19-81e8-446b-8d48-e0693a0a616d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1344,
+        48
+      ],
+      "id": "d5c08d5c-776b-4fe3-a9b8-deb364aaa28d",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1568,
+        240
+      ],
+      "id": "2e1ad4ab-a28c-4047-a9c6-17787001a661",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1792,
+        432
+      ],
+      "id": "eee2ff55-aa6e-4158-bfc6-424ad3c45fd8",
+      "name": "Respond to Webhook3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "287d45da-c8f9-4066-8d4c-9bccd0d6fa41",
+  "meta": {
+    "instanceId": "b807bf20aa85a77912efeca2be7d03e5fe393521578d509d8cfa93dddabfbec9"
+  },
+  "nodeGroups": [],
+  "id": "4NBtCJ3xNwqHhWgn",
+  "tags": []
+}

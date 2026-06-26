@@ -1,42 +1,115 @@
-# Day32 — AI工单优先级路由系统
+# AI Ticket Automation System
 
-## 工作流结构
-Webhook（外部入口）
-→ HTTP Request（DeepSeek分析+评分）
-→ Edit Fields（解析JSON）
-→ IF_1（score=1）→ Edit Fields（普通队列）
-→ IF_2（score=2）→ Edit Fields（售后队列）
-→ IF_3（score=3）→ Edit Fields（高级客服队列）
-→ false → Edit Fields（主管处理队列）
-→ Respond to Webhook
+## 项目简介
 
-## Webhook 配置
-- Method：POST
-- Path：ticket-priority
+企业工单自动化系统。
 
-## 标准输出格式
+通过 n8n + SiliconFlow + DeepSeek 实现：
+
+用户提交问题
+↓
+AI分析
+↓
+自动生成工单
+↓
+输出处理建议
+
+---
+
+## 技术栈
+
+- n8n
+- HTTP Request
+- SiliconFlow API
+- DeepSeek
+- Webhook
+
+---
+
+## 项目结构
+
+```text
+Day31_AI_Ticket_Automation_System/
+
+├── workflow.json
+├── prompt_library.txt
+├── test_data.json
+├── README.md
+└── screenshots/
+```
+
+---
+
+## 工作流架构
+
+```text
+Webhook
+↓
+DeepSeek分析
+↓
+Edit Fields
+↓
+Respond To Webhook
+```
+
+---
+
+## AI分析内容
+
+自动生成：
+
+- 分类
+- 优先级
+- 处理部门
+- 处理建议
+
+---
+
+## 测试案例
+
+### 案例1
+
+输入：
+
+我的订单已经10天没有发货了
+
+输出：
+
+```json
 {
   "category": "物流",
   "priority": "高",
-  "score": "3",
-  "queue": "高级客服队列",
   "department": "客服部",
   "suggestion": "立即核查订单状态"
 }
+```
 
-## 核心表达式总结
+### 案例2
 
-| 用途 | 写法 |
-|------|------|
-| 取 Webhook 数据 | `{{ $json.body.message }}` |
-| 解析AI返回JSON | `={{ JSON.parse($json.choices[0].message.content.replace(/\`\`\`json/g,'').replace(/\`\`\`/g,'').trim()).字段名 }}` |
-| IF条件取score | `={{ $json.score }}` |
+输入：
 
-## 队列路由规则
+我要申请退款
 
-| score | priority | 队列 |
-|-------|----------|------|
-| 1 | 低 | 普通队列 |
-| 2 | 中 | 售后队列 |
-| 3 | 高 | 高级客服队列 |
-| 4 | 紧急 | 主管处理队列 |
+输出：
+
+```json
+{
+  "category": "售后",
+  "priority": "中",
+  "department": "售后部",
+  "suggestion": "核实订单信息后处理退款"
+}
+```
+
+---
+
+## 项目亮点
+
+- AI自动分析工单
+- 自动判断优先级
+- 自动推荐处理部门
+- 标准JSON输出
+- 企业自动化场景
+
+---
+

@@ -1,0 +1,28 @@
+{
+  "test_cases": [
+    {
+      "input": {"user": "Jeffy", "message": "订单15天未发货，请马上处理"},
+      "expected_priority": "高",
+      "expected_department": "客服部",
+      "expected_status": "Pending"
+    },
+    {
+      "input": {"user": "Jeffy", "message": "我要申请退款"},
+      "expected_priority": "中",
+      "expected_department": "售后部",
+      "expected_status": "Pending"
+    },
+    {
+      "input": {"user": "Jeffy", "message": "发票什么时候开"},
+      "expected_priority": "低",
+      "expected_department": "财务部",
+      "expected_status": "Pending"
+    },
+    {
+      "input": {"user": "Jeffy", "message": "系统登录失败"},
+      "expected_priority": "高",
+      "expected_department": "技术支持部",
+      "expected_status": "Pending"
+    }
+  ]
+}
