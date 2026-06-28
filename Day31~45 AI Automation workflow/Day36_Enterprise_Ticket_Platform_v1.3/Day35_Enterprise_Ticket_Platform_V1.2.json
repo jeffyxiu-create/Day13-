@@ -1,0 +1,1029 @@
+{
+  "name": "Day35_Enterprise_Ticket_Platform_V1.2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "enterprise_ticket",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        64
+      ],
+      "id": "f93faf5b-7ef7-40a0-a353-bb117e0d0f6e",
+      "name": "Webhook",
+      "webhookId": "092427cd-9e56-438f-a03a-577e696041f1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"model\":\"deepseek-ai/DeepSeek-V3\",\n\"messages\":[\n{\n\"role\":\"system\",\n\"content\":\"你是一企业工单分析助手。只返回JSON，不返回其它文字。格式：{\\\"category\\\":\\\"\\\",\\\"priority\\\":\\\"\\\",\\\"score\\\":\\\"\\\",\\\"queue\\\":\\\"\\\",\\\"department\\\":\\\"\\\",\\\"suggestion\\\":\\\"\\\"}优先信只能填:低、中、高、紧急score规则：紧急=4（投诉、账号被盗、系统故障），高=3（发货延迟超3天），中=2（退款、退款、），低=1（一般咨询、发货查询、其他）,只返回数字。queue规则：score=1->普通队列， score=2->售后队列，score=3->高级客服队列，score=4->主管处理队列。department规则：物流/发货问题->客服部,退货/换货问题->售后部, 发票/账单问题->财务部,系统/登录问题->技术支持部.\"\n},\n{\n\"role\":\"user\",\n\"content\":\"{{ $json.body.message }}\"\n}\n],\n\"temperature\":0.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        64
+      ],
+      "id": "fce706e5-edbe-4e61-a88c-c8d117e615df",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "MIhSaUXLErUNj5eQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9f9abef5-aafb-4453-bb70-81213ef32cf4",
+              "name": "category",
+              "value": "={{ \nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).category }}\n",
+              "type": "string"
+            },
+            {
+              "id": "fd6a298e-1efe-4c58-93d3-4a237618c658",
+              "name": "priority",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).priority}}",
+              "type": "string"
+            },
+            {
+              "id": "25562bc6-6d2e-4076-b714-d9f645989025",
+              "name": "score",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).score }}",
+              "type": "string"
+            },
+            {
+              "id": "51e814ad-0682-4c5f-bba3-08099c37e591",
+              "name": "queue",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).queue }}",
+              "type": "string"
+            },
+            {
+              "id": "50e30a96-9422-4f01-b9e4-31f138cd1180",
+              "name": "suggestion",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).suggestion }}",
+              "type": "string"
+            },
+            {
+              "id": "379f1e51-6cb1-43fa-89d1-6ca7f186b7ec",
+              "name": "department",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).department }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        64
+      ],
+      "id": "ca9a6890-3e59-460e-a023-c19c4513507f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f55709aa-c773-4e39-be35-4d2ad859f1ca",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "1",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        64
+      ],
+      "id": "b96b556f-1164-4868-892f-b39d5a7b11f1",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "262b66b5-52c8-4ef2-a127-1b06a2ddc894",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "2",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        160
+      ],
+      "id": "6b57c957-7909-45c4-8a83-15606d68b22f",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "55da7af9-022b-460b-83ee-7671f61f2271",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "3",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        256
+      ],
+      "id": "f346f659-de16-4825-9abc-7b87de73c115",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "bc7b2546-7402-445d-886d-b9c7156382cd",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": "4",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        352
+      ],
+      "id": "b1066bb9-2edd-4d57-8883-d9e6ac783272",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bf9d5bf-3cf7-4f5b-b670-e2393513742e",
+              "name": "queue",
+              "value": "普通队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        -224
+      ],
+      "id": "acf89f33-c874-4354-811a-3efc2c6bbf98",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "444c4461-4874-430e-a7e5-914a5c3d8081",
+              "name": "queue",
+              "value": "售后队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        -32
+      ],
+      "id": "5131ff32-ebfb-45f6-a6d3-44286accea72",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ab8b2b7-873f-41e1-b8a7-620564e1bf7e",
+              "name": "queue",
+              "value": "高级客服队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        160
+      ],
+      "id": "e249fead-ea23-462e-a135-2ce8dca078f2",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "42124f27-fc03-4c65-9d84-59cdf666c30b",
+              "name": "queue",
+              "value": "主管处理队列",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        352
+      ],
+      "id": "c67d5be8-4252-4465-8a8d-07dec5c42bb4",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "客服部",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a7b8d72b-aac3-490a-909f-d0904f83f63b"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "361e5109-929c-4934-a748-40e54d8f05ae",
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "售后部",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "13e2ebfb-4514-4763-ac19-5f18fb60c76e",
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "财务部",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b2e84d45-0cc9-4889-8098-c867b872d16f",
+                    "leftValue": "={{ $json.department }}",
+                    "rightValue": "技术支持部",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        32
+      ],
+      "id": "668f262e-076c-4151-8298-80bdb74cffe8",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1e44e8fd-c6f0-4062-9df4-ff11566e5174",
+              "name": "ticket_id",
+              "value": "={{\"TK-\" + $now.toFormat(\"yyyyMMdd\") + \"-\" + $now.toFormat(\"HHmmss\") }}",
+              "type": "string"
+            },
+            {
+              "id": "864f877e-6574-44b4-9cb0-712bc2479412",
+              "name": "create_time",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\")  }}",
+              "type": "string"
+            },
+            {
+              "id": "0da12f1e-17ff-4859-98eb-ce1d4795cdf9",
+              "name": "deadline",
+              "value": "={{ $json.priority === \"紧急\" ?  $now.plus({hours:24}).toFormat(\"yyyy-MM-dd HH:mm\") : $json.priority === \"高\" ?  $now.plus({hours:24}).toFormat(\"yyyy-MM-dd HH:mm\") : $json.priority === \"中\" ? $now.plus({hours:48}).toFormat(\"yyyy-MM-dd HH:mm\") : $now.plus({hours:72}).toFormat(\"yyyy-MM-dd HH:mm\") }}",
+              "type": "string"
+            },
+            {
+              "id": "2184945b-62ec-44c7-aecb-b19365b1e8cf",
+              "name": "status",
+              "value": "Pending",
+              "type": "string"
+            },
+            {
+              "id": "0c758a1d-e947-4b14-bc87-439e5b53f51e",
+              "name": "owner_name",
+              "value": "=部门负责人",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2016,
+        64
+      ],
+      "id": "af0ed66a-e818-4c12-9b99-a057defbb48d",
+      "name": "Edit Fields5"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "测试",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1973057136,
+          "mode": "list",
+          "cachedResultName": "Day35_Enterprise_Ticket_Platform_V1.2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=1973057136"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "create_time": "={{ $json.create_time }}",
+            "deadline": "={{ $json.deadline }}",
+            "status": "={{ $json.status }}",
+            "category": "={{ $json.category }}",
+            "priority": "={{ $json.priority }}",
+            "score": "={{ $json.score }}",
+            "queue": "={{ $json.queue }}",
+            "department": "={{ $json.department }}",
+            "user": "={{ $('Webhook').item.json.body.user }}",
+            "message": "={{ $('Webhook').item.json.body.message }}",
+            "suggestion": "={{ $json.suggestion }}",
+            "owner_name": "={{ $json.owner_name }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "department",
+              "displayName": "department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user",
+              "displayName": "user",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "owner_name",
+              "displayName": "owner_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2240,
+        64
+      ],
+      "id": "314e2548-64b7-4692-bc43-37790fe8cdf0",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "mLX54nc9kBqdwDzv",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.owner_email }}",
+        "subject": "={{ $json.notification_title }}",
+        "emailType": "text",
+        "message": "={{ $json.notification_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2672,
+        64
+      ],
+      "id": "f5813aab-ac43-429b-936d-c527b0e1287f",
+      "name": "Send a message",
+      "webhookId": "0bb18943-7ea5-41dc-b2b6-282bf98d373e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "P3MA1iYYcyDbMQ3e",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3104,
+        64
+      ],
+      "id": "18351128-5546-4cd6-9924-fd48c772558b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a9387f1e-2bea-4dfa-acb6-a8a3fc6be5bf",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "8f39fd9b-ae71-4dde-8f48-36c4b401ec86",
+              "name": "ai_category",
+              "value": "={{ $('Edit Fields').item.json.category }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2880,
+        64
+      ],
+      "id": "546697ff-7063-4e2b-8945-01b3e3509f2b",
+      "name": "Edit Fields6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e8193eb3-87f1-4dfd-939c-dbe3791086b8",
+              "name": "owner_email",
+              "value": "={{ $json.department === \"客服部\" ?\"522249689@qq.com\" : $json.department === \"售后部\" ? \"444212226@qq.com\" : $json.department === \"财务部\" ? \"444212226@qq.com\" : \"522249689@qq.com\" }}",
+              "type": "string"
+            },
+            {
+              "id": "4ce87dc6-d613-44a4-9a45-5494fa664270",
+              "name": "notification_channel",
+              "value": "email",
+              "type": "string"
+            },
+            {
+              "id": "d8f29b4d-7c15-4756-998b-891430a66c93",
+              "name": "send_time",
+              "value": "=={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}",
+              "type": "string"
+            },
+            {
+              "id": "3ef06a59-d7ce-4d1a-b8f3-849543882f25",
+              "name": "notification_title",
+              "value": "={{ \"[新工单通知]\"+$json.ticket_id+\"-\"+ $json.priority}}",
+              "type": "string"
+            },
+            {
+              "id": "2c703bce-e85d-4579-a1f0-2ced64f3a425",
+              "name": "notification_body",
+              "value": "=={{ \"工单编号：\" + $json.ticket_id + \n\"\\n优先级：\" + $json.priority + \n\"\\n部门：\" + $json.department +\n \"\\n队列：\" + $json.queue + \n\"\\n\\n问题描述：\\n\" + \n$('Webhook').first().json.body.message + \n\"\\n\\n处理建议：\\n\" + \n$json.suggestion + \n\"\\n\\n截止时间：\" +\n$json.deadline + \n\"\\n\\n请及时登录系统处理该工单。\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2448,
+        64
+      ],
+      "id": "f38e3f33-23dd-40d4-9bfb-a8f7528c4c17",
+      "name": "Notification Builder"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields5": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Notification Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields6": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification Builder": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "3f7f4780-2911-4305-8e7e-57a04c03f37f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b807bf20aa85a77912efeca2be7d03e5fe393521578d509d8cfa93dddabfbec9"
+  },
+  "nodeGroups": [],
+  "id": "51rpxKvG7mLKaQ2i",
+  "tags": []
+}
