@@ -1,0 +1,1987 @@
+{
+  "name": "Day38_Enterprise_Ticket_Platform_v1.4",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ticket-approval-2.0",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2864,
+        -144
+      ],
+      "id": "4d5a83ca-7af5-47af-a45e-9ef6f8734442",
+      "name": "Webhook",
+      "webhookId": "0dc97cac-9f57-4704-bf4e-a20a623ddaec"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.siliconflow.cn/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"deepseek-ai/DeepSeek-V3\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"你是一个企业工单分析助手。你必须只返回 JSON，严禁输出任何额外文字。JSON格式：{\\\"category\\\":\\\"\\\",\\\"priority\\\":\\\"\\\",\\\"score\\\":\\\"\\\",\\\"queue\\\":\\\"\\\",\\\"department\\\":\\\"\\\",\\\"suggestion\\\":\\\"\\\"}。规则：1.score规则(返回数字):4(紧急):投诉/账号被盗/系统故障;3(高):发货延迟超3天/大额退款;2(中):一般退款/退换货;1(低):一般咨询/发货查询/发票账单。2.priority:对应4(紧急)/3(高)/2(中)/1(低)。3.queue规则:score=1->普通队列,score=2->售后队列,score=3->高级客服队列,score=4->主管处理队列。4.department规则:物流/发货->客服部,退货/换货->售后部,发票/账单->财务部,系统/登录->技术支持部。5.suggestion:若score>=3,标注\\\"需进入Pending Approval审批流\\\";若score<3,标注\\\"直接进入通知流程\\\"。\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.body.message }}\"\n    }\n  ],\n  \"temperature\": 0.1\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2640,
+        -144
+      ],
+      "id": "fcd511da-7826-4786-ac77-65c36d27baef",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gvExRx9dm9yNu6do",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2e2dad60-dbf3-4439-8ab2-f5f530d54e2d",
+              "name": "category",
+              "value": "={{\nJSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).category }}\n",
+              "type": "string"
+            },
+            {
+              "id": "6bea82ca-b6a1-494b-9f8d-f45ebdb3efcd",
+              "name": "priority",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).priority }}",
+              "type": "string"
+            },
+            {
+              "id": "ba1e68ae-3fbf-4f7f-9933-b0ca35ab3311",
+              "name": "score",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).score }}",
+              "type": "string"
+            },
+            {
+              "id": "ec375d56-d6fa-4390-9488-92bfc8868a1a",
+              "name": "queue",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).queue }}",
+              "type": "string"
+            },
+            {
+              "id": "f96fa878-68c6-47b8-aba6-1b5b8e16aa52",
+              "name": "department",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).department }}",
+              "type": "string"
+            },
+            {
+              "id": "2ec39ac1-bdf1-4b6a-aaaf-b7ea7ce1895b",
+              "name": "suggestion",
+              "value": "={{  JSON.parse($json.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim()).suggestion }}",
+              "type": "string"
+            },
+            {
+              "id": "cc319c03-4297-45dc-aed6-35b4aea245f8",
+              "name": "ticket_id",
+              "value": "={{ \"TK-\"+$now.toFormat(\"yyyyMMdd\")+\"-\"+$now.toFormat(\"HHmmss\") }}",
+              "type": "string"
+            },
+            {
+              "id": "19480fc5-9e4e-4891-9123-3e170b179461",
+              "name": "create_time",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm \") }}",
+              "type": "string"
+            },
+            {
+              "id": "017790dd-0316-44e2-995a-41013b311c22",
+              "name": "deadline",
+              "value": "={{ $json.priority === \"紧急\" ?  $now.plus({hours:24}).toFormat(\"yyyy-MM-dd HH:mm\") : $json.priority === \"高\" ?  \n$now.plus({hours:24}).toFormat(\"yyyy-MM-dd HH:mm\") : $json.priority === \"中\" ? \n$now.plus({hours:48}).toFormat(\"yyyy-MM-dd HH:mm\") : $now.plus({hours:72}).toFormat(\"yyyy-MM-dd HH:mm\") }}",
+              "type": "string"
+            },
+            {
+              "id": "979a04b1-f27c-4f2b-85e4-b8c1c38c93b0",
+              "name": "status",
+              "value": "Pending",
+              "type": "string"
+            },
+            {
+              "id": "9c6a85ab-c774-4e0b-8017-0cb11ce9cbf0",
+              "name": "owner_name",
+              "value": "部门负责人",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2416,
+        -144
+      ],
+      "id": "fbe8f070-c69a-4c62-9012-e0fee2023748",
+      "name": "Ticket Builder"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "create_time": "={{ $json.create_time }}",
+            "deadline": "={{ $json.deadline }}",
+            "status": "={{ $json.status }}",
+            "category": "={{ $json.category }}",
+            "priority": "={{ $json.priority }}",
+            "score": "={{ $json.score }}",
+            "queue": "={{ $json.queue }}",
+            "message": "={{ $('Webhook').item.json.body.message }}",
+            "suggestion": "={{ $json.suggestion }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -2192,
+        -144
+      ],
+      "id": "d7576e4d-7326-4d80-82ac-47fb8f0e9fbb",
+      "name": "Create Ticket(唯一数据源)",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "38e7cd83-3b4b-427b-a8ef-15f5708bd8ef",
+              "leftValue": "={{Number ($json.score) }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1968,
+        -144
+      ],
+      "id": "4dbfde0b-18d2-416d-bec7-12209b261a4d",
+      "name": "Priority Engine"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7d0686cb-cbf8-4f3e-9ef2-c586eac7a71d",
+              "name": "recipient",
+              "value": "={{ $json.department === \"客服部\" ?\"522249689@qq.com\" : $json.department === \"售后部\" ? \"444212226@qq.com\" : $json.department === \"财务部\" ? \"444212226@qq.com\" : \"522249689@qq.com\" }}",
+              "type": "string"
+            },
+            {
+              "id": "32fe6373-017f-4e27-885c-5b19c1b6321e",
+              "name": "notification_channel",
+              "value": "=email",
+              "type": "string"
+            },
+            {
+              "id": "1a4388c5-77c4-4f52-9aea-58dadee14cef",
+              "name": "send_time",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}",
+              "type": "string"
+            },
+            {
+              "id": "b1366196-bac2-4af1-815f-527a14e5a25a",
+              "name": "notification_title",
+              "value": "={{ \"[新工单通知]\"+$json.ticket_id+\"-\"+ $json.priority}}",
+              "type": "string"
+            },
+            {
+              "id": "03dc7bfd-3c31-4bc3-92f9-90cdbab7f4a0",
+              "name": "notification_body",
+              "value": "=={{ \"工单编号：\" + $json.ticket_id + \n\"\\n优先级：\" + $json.priority + \n\"\\n部门：\" + $json.department +\n \"\\n队列：\" + $json.queue + \n\"\\n\\n问题描述：\\n\" + \n$('Webhook').first().json.body.message + \n\"\\n\\n处理建议：\\n\" + \n$json.suggestion + \n\"\\n\\n截止时间：\" +\n$json.deadline + \n\"\\n\\n请及时登录系统处理该工单。\" }}",
+              "type": "string"
+            },
+            {
+              "id": "e929541d-75f8-491f-83cd-6114c2fd1c21",
+              "name": "notification_type",
+              "value": "=\"email\"",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1744,
+        48
+      ],
+      "id": "f8283969-2af4-4403-b917-8913ddeba939",
+      "name": "Notification Builder（Low）"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipient }}",
+        "subject": "={{ $json.notification_title }}",
+        "emailType": "text",
+        "message": "={{ $('Notification Builder（Low）').item.json.notification_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1520,
+        128
+      ],
+      "id": "cc5a912c-7ff2-4528-befe-ecda69d130f9",
+      "name": "Send a message",
+      "webhookId": "a23e0696-5d96-4226-86f1-8dc8af81eafc",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LbCOsnb9v0W3ycqI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1296,
+        48
+      ],
+      "id": "cdbdc37c-217d-4b92-b2b3-ebb0e516b743",
+      "name": "Merge",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -624,
+        48
+      ],
+      "id": "f282885d-f79e-4a49-8621-b03127e22499",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1796569495,
+          "mode": "list",
+          "cachedResultName": "System_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=1796569495"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "notification_type": "={{ $json.notification_type }}",
+            "log_action": "=\"low_direct_notify\"",
+            "log_status": "=\"success\"",
+            "log_time": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_time",
+              "displayName": "log_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_action",
+              "displayName": "log_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_status",
+              "displayName": "log_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notification_type",
+              "displayName": "notification_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1072,
+        48
+      ],
+      "id": "ebef2fb3-8096-4e23-a18c-c787647a617f",
+      "name": "Log Engine",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $('Create Ticket(唯一数据源)').item.json.ticket_id }}",
+            "status": "Completed",
+            "updated_at": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm:ss\") }}",
+            "message": "={{ $('Create Ticket(唯一数据源)').item.json.message }}"
+          },
+          "matchingColumns": [
+            "ticket_id"
+          ],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -848,
+        48
+      ],
+      "id": "c3e57a8d-e249-49e4-bb96-4a7365944a5b",
+      "name": "Update Ticket",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "status": "PendingApproval",
+            "updated_at": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm:ss\") }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [
+            "ticket_id"
+          ],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1744,
+        -288
+      ],
+      "id": "721ec1b1-f516-47b6-961e-bc0e2e77c0f0",
+      "name": "Update high in sheet1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1520,
+        -288
+      ],
+      "id": "2f8365dc-b86f-413a-a7ea-ce89e8819002",
+      "name": "Wait",
+      "webhookId": "0da4d7c8-a70b-4987-8d00-035a890e214b"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "ticket_id",
+              "lookupValue": "={{ $json.query.ticket_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1296,
+        -288
+      ],
+      "id": "23b3019a-565a-4616-ba84-54e8f35c89e9",
+      "name": "context Recovery lookup",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1b33c775-d476-4265-b4bd-fdd35bd78485",
+              "leftValue": "={{ $('Wait').item.json.query.decision }}",
+              "rightValue": "approved",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1072,
+        -288
+      ],
+      "id": "b9796709-9528-43c9-96c9-4e35495a6df7",
+      "name": "Approval if"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "status": "Approved",
+            "updated_at": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm:ss\") }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [
+            "ticket_id"
+          ],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -848,
+        -384
+      ],
+      "id": "06f62375-1caa-46a3-a7fd-2ba51195f174",
+      "name": "Update Ticket1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0c1cb8e-f423-4cfa-8115-a22e99094e3a",
+              "name": "title",
+              "value": "={{ \"[审批通过]\" +\" \" +$json.ticket_id }}",
+              "type": "string"
+            },
+            {
+              "id": "e8fb9b2f-4ce3-412d-bc44-42b6d9932977",
+              "name": "body",
+              "value": "={{ \"[审批通过]\" +\" \" +$json.ticket_id +\" 已审批通过,请立即处理\\n审批意见:\" + $('Wait').item.json.query.comment}}",
+              "type": "string"
+            },
+            {
+              "id": "77057035-0128-4382-9411-6c0fdddbf2f5",
+              "name": "recipient",
+              "value": "={{ $json.department === \"客服部\" ?\"522249689@qq.com\" : $json.department === \"售后部\" ? \"444212226@qq.com\" : $json.department === \"财务部\" ? \"444212226@qq.com\" : \"522249689@qq.com\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        -384
+      ],
+      "id": "ff4933a8-0cc7-4de3-a0a5-007901441a6e",
+      "name": "Message Builder"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1796569495,
+          "mode": "list",
+          "cachedResultName": "System_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=1796569495"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "notification_type": "=email",
+            "log_action": "=approved",
+            "log_status": "=success",
+            "log_time": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_time",
+              "displayName": "log_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_action",
+              "displayName": "log_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_status",
+              "displayName": "log_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notification_type",
+              "displayName": "notification_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        48,
+        -384
+      ],
+      "id": "cdea6844-efa6-4f6d-a2df-a8aec99eec96",
+      "name": "Log Engine1",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $('Create Ticket(唯一数据源)').item.json.ticket_id }}",
+            "status": "Completed",
+            "updated_at": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm:ss\") }}",
+            "message": "={{ $('Create Ticket(唯一数据源)').item.json.message }}"
+          },
+          "matchingColumns": [
+            "ticket_id"
+          ],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        -384
+      ],
+      "id": "05d53c31-50e6-4529-879f-d2decadff2c0",
+      "name": "Update Ticket2",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -176,
+        -384
+      ],
+      "id": "5c498eaf-c339-4829-b5db-07b63a56572a",
+      "name": "Merge1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipient }}",
+        "subject": "={{ $json.title }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        -304
+      ],
+      "id": "0db67064-9e1c-4db7-855f-4f1a15cd784e",
+      "name": "Send a message1",
+      "webhookId": "a23e0696-5d96-4226-86f1-8dc8af81eafc",
+      "alwaysOutputData": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "LbCOsnb9v0W3ycqI",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        496,
+        -384
+      ],
+      "id": "3264805d-3acb-471f-8f3d-0b1679b0b175",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "status": "Rejected",
+            "updated_at": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm:ss\") }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [
+            "ticket_id"
+          ],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "create_time",
+              "displayName": "create_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "queue",
+              "displayName": "queue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "suggestion",
+              "displayName": "suggestion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -848,
+        -192
+      ],
+      "id": "8f0df793-796e-4b49-8b0b-376c311f5bb4",
+      "name": "Update Ticket3",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1796569495,
+          "mode": "list",
+          "cachedResultName": "System_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=1796569495"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_id": "={{ $json.ticket_id }}",
+            "notification_type": "=email",
+            "log_action": "=rejected",
+            "log_status": "=success",
+            "log_time": "={{ $now.toFormat(\"yyyy-MM-dd HH:mm\") }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ticket_id",
+              "displayName": "ticket_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_time",
+              "displayName": "log_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_action",
+              "displayName": "log_action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "log_status",
+              "displayName": "log_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notification_type",
+              "displayName": "notification_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -624,
+        -192
+      ],
+      "id": "6a983781-68b2-424b-b2b4-a7cb9c46d77b",
+      "name": "Log Engine2",
+      "credentials": {
+        "googleApi": {
+          "id": "jjv7w3aXtOMlu22o",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Ticket Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket Builder": {
+      "main": [
+        [
+          {
+            "node": "Create Ticket(唯一数据源)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Ticket(唯一数据源)": {
+      "main": [
+        [
+          {
+            "node": "Priority Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priority Engine": {
+      "main": [
+        [
+          {
+            "node": "Update high in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notification Builder（Low）",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notification Builder（Low）": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Log Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Log Engine": {
+      "main": [
+        [
+          {
+            "node": "Update Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Ticket": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update high in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "context Recovery lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "context Recovery lookup": {
+      "main": [
+        [
+          {
+            "node": "Approval if",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval if": {
+      "main": [
+        [
+          {
+            "node": "Update Ticket1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Ticket3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Ticket1": {
+      "main": [
+        [
+          {
+            "node": "Message Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Builder": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Engine1": {
+      "main": [
+        [
+          {
+            "node": "Update Ticket2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Log Engine1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Update Ticket2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Engine2": {
+      "main": [
+        []
+      ]
+    },
+    "Update Ticket3": {
+      "main": [
+        [
+          {
+            "node": "Log Engine2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f4718840-10a0-48eb-82cd-5b6548b251ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f1a9f28c8094a4fd5a4615147bdf8bfca1f48ea0976c5810df0d86dd1f6a4771"
+  },
+  "nodeGroups": [],
+  "id": "i3eHDaHgK9GoKvAW",
+  "tags": []
+}
