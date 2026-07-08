@@ -1,0 +1,131 @@
+{
+  "test_cases": [
+    {
+      "case_id": "TC-001",
+      "description": "高优先级工单 - 审批通过 - 派单给Alice",
+      "input": {
+        "user": "Jeffy",
+        "message": "订单15天未发货"
+      },
+      "expected_priority": "高",
+      "expected_score": "3",
+      "expected_approval_required": true,
+      "approval_action": {
+        "decision": "approved",
+        "comment": "情况属实，同意处理"
+      },
+      "expected_output": {
+        "status": "Assigned",
+        "approval_status": "Approved",
+        "assigned_department": "Support",
+        "assigned_owner": "Tom",
+        "assigned_queue": "Priority Queue"
+      },
+      "verify": [
+        "Postman返回status = Assigned",
+        "主表对应行department/owner/queue已更新",
+        "System_Log新增一行log_action = assignment_completed",
+        "邮箱收到派单通知邮件"
+      ]
+    },
+    {
+      "case_id": "TC-002",
+      "description": "紧急优先级工单 - 审批通过 - 派单给Alice进VIP Queue",
+      "input": {
+        "user": "Jeffy",
+        "message": "客服态度恶劣，我要投诉并曝光到媒体"
+      },
+      "expected_priority": "紧急",
+      "expected_score": "4",
+      "expected_approval_required": true,
+      "approval_action": {
+        "decision": "approved",
+        "comment": "紧急工单，立即处理"
+      },
+      "expected_output": {
+        "status": "Assigned",
+        "approval_status": "Approved",
+        "assigned_department": "Customer Service",
+        "assigned_owner": "Alice",
+        "assigned_queue": "VIP Queue"
+      },
+      "verify": [
+        "Postman返回status = Assigned",
+        "主表assigned_owner = Alice",
+        "主表assigned_queue = VIP Queue",
+        "System_Log新增一行"
+      ]
+    },
+    {
+      "case_id": "TC-003",
+      "description": "高优先级工单 - 审批拒绝 - 不进入Assignment Engine",
+      "input": {
+        "user": "Jeffy",
+        "message": "系统登录失败，影响正常工作"
+      },
+      "expected_priority": "高",
+      "expected_score": "3",
+      "expected_approval_required": true,
+      "approval_action": {
+        "decision": "rejected",
+        "comment": "信息不完整，需要补充截图"
+      },
+      "expected_output": {
+        "status": "Rejected",
+        "approval_status": "Rejected"
+      },
+      "verify": [
+        "Postman返回status = Rejected",
+        "主表status = Rejected",
+        "邮箱不收到派单通知邮件",
+        "System_Log记录rejected动作"
+      ]
+    },
+    {
+      "case_id": "TC-004",
+      "description": "低优先级工单 - 直接通知 - 不进入审批流",
+      "input": {
+        "user": "Jeffy",
+        "message": "发票什么时候开"
+      },
+      "expected_priority": "低",
+      "expected_score": "1",
+      "expected_approval_required": false,
+      "expected_output": {
+        "status": "Assigned",
+        "assigned_department": "General",
+        "assigned_owner": "David",
+        "assigned_queue": "General Queue"
+      },
+      "verify": [
+        "工作流不经过Wait节点",
+        "Postman直接返回结果",
+        "邮箱收到通知邮件",
+        "主表status更新正确"
+      ]
+    }
+  ],
+  "assignment_rules": {
+    "note": "Day40升级为规则引擎，当前版本写死",
+    "紧急": {
+      "department": "Customer Service",
+      "owner": "Alice",
+      "queue": "VIP Queue"
+    },
+    "高": {
+      "department": "Support",
+      "owner": "Tom",
+      "queue": "Priority Queue"
+    },
+    "中": {
+      "department": "General",
+      "owner": "David",
+      "queue": "General Queue"
+    },
+    "低": {
+      "department": "General",
+      "owner": "David",
+      "queue": "General Queue"
+    }
+  }
+}
