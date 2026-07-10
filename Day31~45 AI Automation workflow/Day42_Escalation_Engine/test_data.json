@@ -1,0 +1,77 @@
+{
+  "test_case_1_urgent_ticket": {
+    "webhook_body": {
+      "user": "Jeffy",
+      "message": "订单15天未发货，客户要投诉曝光",
+      "score": 4
+    },
+    "expect_base": {
+      "priority": "紧急",
+      "sla_level": "L1",
+      "sla_hours": 1,
+      "reminder_status": "not_sent",
+      "reminder_count": 0
+    },
+    "simulate_reminder_check": {
+      "due_time": "2026-07-05 16:00:00",
+      "now_time": "2026-07-05 15:35:00",
+      "remaining_minutes": 25,
+      "reminder_count": 0,
+      "should_send_reminder": true
+    }
+  },
+  "test_case_2_high_ticket_no_remind": {
+    "webhook_body": {
+      "user": "Tom",
+      "message": "商品配件缺失，需要补发",
+      "score": 3
+    },
+    "expect_base": {
+      "priority": "高",
+      "sla_level": "L2",
+      "sla_hours": 4,
+      "reminder_status": "not_sent",
+      "reminder_count": 0
+    },
+    "simulate_reminder_check": {
+      "due_time": "2026-07-05 20:00:00",
+      "now_time": "2026-07-05 15:35:00",
+      "remaining_minutes": 265,
+      "reminder_count": 0,
+      "should_send_reminder": false
+    }
+  },
+  "test_case_3_reach_max_remind": {
+    "webhook_body": {
+      "user": "Lisa",
+      "message": "会员充值未到账",
+      "score": 4
+    },
+    "expect_base": {
+      "priority": "紧急",
+      "sla_level": "L1",
+      "sla_hours": 1,
+      "reminder_status": "sent",
+      "reminder_count": 3
+    },
+    "simulate_reminder_check": {
+      "due_time": "2026-07-05 16:00:00",
+      "now_time": "2026-07-05 15:35:00",
+      "remaining_minutes": 25,
+      "reminder_count": 3,
+      "should_send_reminder": false
+    }
+  },
+  "test_case_4_normal_low_ticket": {
+    "webhook_body": {
+      "user": "David",
+      "message": "咨询积分兑换规则",
+      "score": 1
+    },
+    "expect_base": {
+      "priority": "低",
+      "sla_level": "L3",
+      "sla_hours": 24
+    }
+  }
+}
