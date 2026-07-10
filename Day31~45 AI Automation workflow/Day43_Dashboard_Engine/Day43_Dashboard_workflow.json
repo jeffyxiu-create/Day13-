@@ -1,0 +1,317 @@
+{
+  "name": "Day43_Dashboard_workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6f12e7d4-18ff-4c25-a382-b10726d53cd3",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c6deea5d-61b0-43de-9fee-ea1e681aa012",
+      "name": "Read Ticket_Main",
+      "credentials": {
+        "googleApi": {
+          "id": "lEScZthgwFgvGa0I",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Statistics Builder —— 统计Ticket_Main里的关键指标\n// 本节点使用\"Run Once for All Items\"模式运行\n// 也就是说：这段代码只执行一次，但可以拿到所有工单的数据\n// 这是Code节点和Edit Fields最大的区别——\n// Edit Fields每条工单跑一次，互相看不到；\n// Code节点能一次性看到全部，才能\"数总数\"\"数超时数\"\n// ============================================================\n\n// $input.all() 拿到上一个节点（Read Ticket_Main）传来的全部数据\n// 返回的是一个数组，数组里每一项代表一张工单\n// 想象成：把Google Sheets表格的每一行都装进了一个\"数组盒子\"里\nconst allTickets = $input.all();\n\n// 用 .length 统计数组里一共有多少项\n// 也就是Ticket_Main里一共有多少张工单\nconst total_ticket = allTickets.length;\n\n// 声明几个计数器变量，初始值都是0\n// 后面用循环，符合条件就 +1，这是\"累加计数\"的标准写法\nlet closed_ticket = 0;\nlet overdue_ticket = 0;\nlet reminder_count = 0;\nlet escalation_count = 0;\n\n\n// 拿到\"现在\"这个时间点，用来判断工单是否已经超时\n// new Date() 不传参数，代表\"当前系统时间\"\nconst now = new Date();\nlet debug_info = [];\n// for...of 循环：把allTickets数组里的每一项，依次取出来叫做ticket\n// 这样就能一张一张工单地检查，检查完一张自动检查下一张\nfor (const ticket of allTickets) {\n  // ticket.json 是这张工单的具体字段内容\n  // n8n里每一项数据都包在 { json: {...} } 结构里，这是固定格式\n  const data = ticket.json;\n\n  // 统计已关闭工单：status字段等于\"Closed\"就算一个\n  if (data.status === \"Closed\") {\n    closed_ticket++;   // ++ 是\"加1\"的简写，等同于 closed_ticket = closed_ticket + 1\n  }\n   // 统计逾期工单：due_time存在 且 还没关闭 且 已经超过due_time\n  if (data.due_time && data.status !== \"Closed\") {\n    debug_info.push({\n  ticket_id: data.ticket_id,\n  due_time_raw: data.due_time,\n  due_time_parsed: new Date(data.due_time).toString(),\n  now: now.toString(),\n  is_overdue: new Date(data.due_time) < now\n});\n    // new Date(字符串) 把文本时间转换成JS能比较大小的时间对象\n    const dueTime = new Date(data.due_time);\n\n    // 如果due_time早于现在，说明已经超时\n    if (dueTime < now) {\n      overdue_ticket++;\n    }\n  }\n\n  // 统计提醒总数：把每张工单的reminder_count字段加起来\n  // Number(...)是\"强制转成数字\"，防止字段是文本导致相加出错（变成字符串拼接）\n  // 如果字段是空的，Number(undefined)会变成NaN，所以用 || 0 兜底成0\n  reminder_count += Number(data.reminder_count) || 0;\n\n  // 统计已升级工单：escalation_status等于\"escalated\"就算一个\n  if (data.escalation_status === \"escalated\") {\n    escalation_count++;\n  }\n}\n\n// return 必须返回一个数组，数组里每一项都要包在 { json: {...} } 结构里\n// 这是n8n Code节点固定的返回格式要求\n// 这里只返回1个item，因为我们要的是\"汇总后的1条统计结果\"，不是逐条工单\n// { total_ticket } 是对象简写，等同于 { total_ticket: total_ticket }\n\nreturn [\n  {\n    json: {\n      total_ticket,\n      closed_ticket,\n      open_ticket: total_ticket - closed_ticket,\n      overdue_ticket,\n      reminder_count,\n      escalation_count,\n      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,\n\n    now_string: now.toString(),\n\n    locale: now.toLocaleString(),\n\n    iso: now.toISOString(),\n\n    offset: now.getTimezoneOffset(),\n\n    debug_info\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "faaa0d88-ea15-46b2-8c5c-b4245b685a1f",
+      "name": "StatisticsBuilder"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c710cded-3792-4fb1-90cf-305475800129",
+              "name": "sla_rate",
+              "value": "={{ $json.total_ticket === 0 ? 100 : Math.round(($json.total_ticket - $json.overdue_ticket) / $json.total_ticket * 100) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "9461faba-779a-4818-8cfc-853e6c461ecf",
+      "name": "KPI Calculator"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "db5126f4-f513-463f-a893-0f4aa93fae09",
+              "name": "report_time",
+              "value": "={{$now.toFormat(\"yyyy-MM-dd HH:mm:ss\")}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        832,
+        0
+      ],
+      "id": "8be53cb8-fc88-4033-bab8-fea8e772fc91",
+      "name": "Dashboard Builder"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 357060664,
+          "mode": "list",
+          "cachedResultName": "Dashboard_Table",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=357060664"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "report_time": "={{ $json.report_time }}",
+            "total_ticket": "={{ $json.total_ticket }}",
+            "open_ticket": "={{ $json.open_ticket }}",
+            "closed_ticket": "={{ $json.closed_ticket }}",
+            "overdue_ticket": "={{ $json.overdue_ticket }}",
+            "reminder_count": "={{ $json.reminder_count }}",
+            "escalation_count": "={{ $json.escalation_count }}",
+            "sal_rate": "={{ $json.sla_rate }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "report_time",
+              "displayName": "report_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_ticket",
+              "displayName": "total_ticket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "open_ticket",
+              "displayName": "open_ticket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "closed_ticket",
+              "displayName": "closed_ticket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "overdue_ticket",
+              "displayName": "overdue_ticket",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reminder_count",
+              "displayName": "reminder_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "escalation_count",
+              "displayName": "escalation_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sal_rate",
+              "displayName": "sal_rate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "9e2a65b9-487c-4d14-b4e3-cdb2e9fce06d",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "lEScZthgwFgvGa0I",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Ticket_Main",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Ticket_Main": {
+      "main": [
+        [
+          {
+            "node": "StatisticsBuilder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "StatisticsBuilder": {
+      "main": [
+        [
+          {
+            "node": "KPI Calculator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KPI Calculator": {
+      "main": [
+        [
+          {
+            "node": "Dashboard Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard Builder": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a8f031c5-7d0f-4421-98db-dbad00ccc34b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e2c5d295d4579ae1385a94fad404afb6bd8c51ee7ad1d29bca6a9cdba76a62e8"
+  },
+  "nodeGroups": [],
+  "id": "P1YeHHjogSG5ujPc",
+  "tags": []
+}

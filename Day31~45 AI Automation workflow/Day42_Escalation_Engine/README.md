@@ -1,48 +1,41 @@
-# Enterprise Ticket Platform V2.1
-## SLA Timer — 超时计时引擎
+# Enterprise Ticket Platform V2.3
+## Escalation Engine — 自动升级引擎
 
-### 本次更新 V2.0 → V2.1
-新增企业模块：SLA Timer
+### 本次更新 V2.2 → V2.3
+新增独立工作流：Workflow 3 - Escalation Engine（Schedule Trigger驱动）
 新增节点：
-✓ SLA Builder（sla_hours/sla_level）
-✓ Due Time Calculator（用Luxon的.plus()算截止时间）
-✓ Remaining Time Calculator（用.diff()算剩余分钟）
-✓ SLA Status IF（今日搭基础设施，Day41启用巡检）
-✓ Notification Engine升级（通知加入SLA信息）
-✓ Log Engine升级（记录sla_level/due_time）
-✓ Ticket Engine升级（唯一更新入口新增sla_level/due_time/sla_status）
+✓ Schedule Trigger（定时巡检，比Reminder Engine间隔更长）
+✓ Filter（status=Assigned 且 due_time不为空）
+✓ Remaining Time Calculator（复用Day41的Luxon计算）
+✓ Escalation Rule（remaining<0 且 未升级过）
+✓ Escalation Level Builder（按sla_level算升级等级）
+✓ Assign Manager（按部门分配主管）
+✓ Send Manager Notification（Gmail升级通知）
+✓ Escalation_Log（独立Sheet记录每次升级）
 
-### SLA规则（V1，写死版）
+### 三个工作流的分工（截至Day42）
 
-| priority | SLA时长 | SLA Level |
-|----------|---------|-----------|
-| 紧急 | 1小时 | L1 |
-| 高 | 4小时 | L2 |
-| 低/中 | 24小时 | L3 |
+| Workflow | 触发方式 | 关注点 | 写入列 |
+|----------|---------|--------|--------|
+| Workflow 1 Ticket Processing | Webhook | 工单创建/审批/派单 | status/department/owner/queue/sla_* |
+| Workflow 2 Reminder Engine | Schedule（1分钟） | 快超时，提醒原负责人 | reminder_* |
+| Workflow 3 Escalation Engine | Schedule（10分钟） | 真超时，通知主管 | escalation_* |
 
-> Day41会给这套规则加上定时巡检，真正抓出超时工单
+### Escalation规则（V1）
 
-### Ticket生命周期（当前）
-
-| 状态 | 触发时机 |
-|------|---------|
-| Pending | 工单创建时 |
-| Pending Approval | 高优先级进入审批 |
-| Approved | 审批通过 |
-| Rejected | 审批拒绝 |
-| Assigned | 自动派单完成，同时算出SLA倒计时 |
-
-### Ticket Engine原则
-所有对主表的更新只经过Ticket Engine这一个节点，SLA Timer不直接写主表。
+| 条件 | 结果 |
+|------|------|
+| remaining_minutes < 0 且 escalation_status未升级过 | 通知主管，标记已升级 |
+| remaining_minutes >= 0 | 不升级 |
+| escalation_status已经是escalated | 不重复通知 |
 
 ### Release Notes
-Enterprise Ticket Platform V2.1
+Enterprise Ticket Platform V2.3
 新增：
-✓ SLA Timer
-✓ 自动计算截止时间（due_time）
-✓ SLA等级标签（sla_level）
-✓ 剩余时间计算（remaining_minutes）
-✓ 通知邮件包含SLA信息
+✓ Escalation Engine（独立Schedule工作流）
+✓ 自动升级通知主管
+✓ 升级等级标签
+✓ Escalation_Log独立追踪
 预留：
-→ Day41：Reminder Engine（定时巡检 + 自动催办）
-→ Day42：Escalation Engine（超时自动升级）
+→ Day43：Dashboard（运营看板，呈现方式待定）
+→ Day44：Statistics（日/周报统计）

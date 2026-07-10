@@ -1,48 +1,42 @@
-# Enterprise Ticket Platform V2.1
-## SLA Timer — 超时计时引擎
+# Enterprise Ticket Platform V2.4
+## Dashboard Workflow — 企业运营看板
 
-### 本次更新 V2.0 → V2.1
-新增企业模块：SLA Timer
+### 本次更新 V2.3 → V2.4
+新增独立工作流：Workflow 4 - Dashboard Workflow（Schedule Trigger驱动，只读）
 新增节点：
-✓ SLA Builder（sla_hours/sla_level）
-✓ Due Time Calculator（用Luxon的.plus()算截止时间）
-✓ Remaining Time Calculator（用.diff()算剩余分钟）
-✓ SLA Status IF（今日搭基础设施，Day41启用巡检）
-✓ Notification Engine升级（通知加入SLA信息）
-✓ Log Engine升级（记录sla_level/due_time）
-✓ Ticket Engine升级（唯一更新入口新增sla_level/due_time/sla_status）
+✓ Schedule Trigger（定时统计，间隔比Escalation Engine更长）
+✓ Statistics Builder（Code节点⭐首次引入，Run Once for All Items汇总N条工单为1条统计结果）
+✓ KPI Calculator（计算sla_rate达成率）
+✓ Dashboard Builder（补充report_time，组装最终看板数据）
+✓ Dashboard_Table（独立Sheet，记录每次统计的时间序列快照）
 
-### SLA规则（V1，写死版）
+### 四个工作流的分工（截至Day43）
 
-| priority | SLA时长 | SLA Level |
-|----------|---------|-----------|
-| 紧急 | 1小时 | L1 |
-| 高 | 4小时 | L2 |
-| 低/中 | 24小时 | L3 |
+| Workflow | 触发方式 | 关注点 | 写入列 |
+|----------|---------|--------|--------|
+| Workflow 1 Ticket Processing | Webhook | 工单创建/审批/派单 | status/department/owner/queue/sla_* |
+| Workflow 2 Reminder Engine | Schedule（1分钟） | 快超时，提醒原负责人 | reminder_* |
+| Workflow 3 Escalation Engine | Schedule（10分钟） | 真超时，通知主管 | escalation_* |
+| Workflow 4 Dashboard Workflow | Schedule（30分钟） | 全局统计，只读呈现 | 不写Ticket_Main，写入Dashboard_Table |
 
-> Day41会给这套规则加上定时巡检，真正抓出超时工单
+### Dashboard统计口径（V1）
 
-### Ticket生命周期（当前）
-
-| 状态 | 触发时机 |
+| 指标 | 计算方式 |
 |------|---------|
-| Pending | 工单创建时 |
-| Pending Approval | 高优先级进入审批 |
-| Approved | 审批通过 |
-| Rejected | 审批拒绝 |
-| Assigned | 自动派单完成，同时算出SLA倒计时 |
-
-### Ticket Engine原则
-所有对主表的更新只经过Ticket Engine这一个节点，SLA Timer不直接写主表。
+| total_ticket | Ticket_Main总行数 |
+| closed_ticket | status=Closed的数量 |
+| open_ticket | total_ticket - closed_ticket |
+| overdue_ticket | status≠Closed 且 due_time已早于当前时间 |
+| reminder_count | 全部工单reminder_count字段求和 |
+| escalation_count | escalation_status=escalated的数量 |
+| sla_rate | (total_ticket - overdue_ticket) / total_ticket × 100 |
 
 ### Release Notes
-Enterprise Ticket Platform V2.1
+Enterprise Ticket Platform V2.4
 新增：
-✓ SLA Timer
-✓ 自动计算截止时间（due_time）
-✓ SLA等级标签（sla_level）
-✓ 剩余时间计算（remaining_minutes）
-✓ 通知邮件包含SLA信息
+✓ Dashboard Workflow（独立Schedule工作流，只读）
+✓ Code节点首次引入，解决跨工单汇总统计问题
+✓ Dashboard_Table时间序列快照
 预留：
-→ Day41：Reminder Engine（定时巡检 + 自动催办）
-→ Day42：Escalation Engine（超时自动升级）
+→ Day44：Statistics（日/周报统计，在Dashboard基础上做时间维度切片）
+→ Day45：Project 2收尾
