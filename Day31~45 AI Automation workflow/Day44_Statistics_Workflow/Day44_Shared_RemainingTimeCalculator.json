@@ -1,0 +1,71 @@
+{
+  "name": "Day44_Shared_RemainingTimeCalculator",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticket",
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "46f4e60a-2219-4aaf-a7e2-5c86fb0f2ec8",
+      "name": "When Executed by Another Workflow",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Calculate Remaining —— 计算剩余分钟数，并合并回原始工单数据\n// 和Day41/42的算法完全一样，只是这次多做一步\"合并\"\n// ============================================================\n\n// $json.ticket 是调用方整体传过来的工单对象\n// 用一个新变量ticket接住，后面操作更清晰\nconst ticket = $json.ticket;\n\n// DateTime.fromFormat(...) 把文本时间解析成Luxon的时间对象\n// .diff($now, 'minutes').minutes 算出\"距离现在还有多少分钟\"\n// Math.round(...) 四舍五入成整数分钟\nconst remaining_minutes = Math.round(\n  DateTime.fromFormat(ticket.due_time, \"yyyy-MM-dd HH:mm:ss\").diff($now, 'minutes').minutes\n);\n\n// return的这一项里，用 ...ticket 展开原始工单的所有字段\n// 展开语法（...）的意思是\"把ticket对象里的每一个字段都摊平铺开\"\n// 再额外加一个新字段remaining_minutes\n// 这样返回的数据 = 原始工单的全部字段 + 新算出来的remaining_minutes\n// 调用方拿到结果后，原本的ticket_id/owner/priority等字段完全不会丢\nreturn [\n  {\n    json: {\n      ...ticket,\n      remaining_minutes\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "9a7524bf-0919-4df5-95a6-a94234cb1e30",
+      "name": "Calculate Remaining"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Calculate Remaining",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Remaining": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0546b9ce-70b0-4340-bf0a-c4fd234eee4a",
+  "meta": {
+    "instanceId": "e2c5d295d4579ae1385a94fad404afb6bd8c51ee7ad1d29bca6a9cdba76a62e8"
+  },
+  "nodeGroups": [],
+  "id": "4Scf03llbybOjeQg",
+  "tags": []
+}

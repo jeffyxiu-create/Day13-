@@ -1,0 +1,16 @@
+{
+  "department_mapping_test": [
+    {"department": "Customer Service", "expected_manager": "Linda", "expected_email": "linda_manager@test.com"},
+    {"department": "Support", "expected_manager": "Kevin", "expected_email": "kevin_manager@test.com"},
+    {"department": "General", "expected_manager": "Grace", "expected_email": "grace_manager@test.com"}
+  ],
+  "statistics_period_test": {
+    "input_period": "day",
+    "expected_period_start_rule": "当天00:00:00",
+    "input_period_2": "week",
+    "expected_period_start_rule_2": "本周一00:00:00",
+    "input_period_3": "month",
+    "expected_period_start_rule_3": "本月1号00:00:00"
+  },
+  "说明": "Department_Mapping测试验证的是Day42两个历史bug（deparment拼写错字、CS与Support共用邮箱）是否被彻底修复；Statistics测试验证的是Shared_StatisticsBuilder能否根据不同period参数算出不同的时间窗口起点"
+}

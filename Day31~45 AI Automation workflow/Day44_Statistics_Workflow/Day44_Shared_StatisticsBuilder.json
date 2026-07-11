@@ -1,0 +1,110 @@
+{
+  "name": "Day44_Shared_StatisticsBuilder",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "period"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "30297d42-76b4-4354-ab95-41bde6b7b8a3",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk",
+          "mode": "list",
+          "cachedResultName": "n8n sheets",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Ticket_Main",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1EJSImdtKPQx70dq8wUK3UYBC0JdSRcZGNUE7J-gBZVk/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "fcf307ad-4c97-49e3-a898-b477e302dca4",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "lEScZthgwFgvGa0I",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Period Statistics Builder —— 按时间窗口统计Ticket_Main\n// 和Day43 Dashboard的Statistics Builder思路一样（跨条目汇总），\n// 区别是这次要先按period参数算出一个时间窗口，\n// 只统计\"创建时间落在这个窗口里\"的工单，而不是全部历史工单\n// ============================================================\n\n// 从Execute Workflow Trigger节点跨节点取出调用方传入的period参数\n// 之所以要跨节点取，是因为当前节点前面接的是Read Ticket_Main，\n// 它的输出是工单数据，不带period这个字段，period还留在最初的触发节点里\nconst period = $('When Executed by Another Workflow').first().json.period;\n\n// 拿到\"现在\"这个时间点，作为窗口的结束时间\nconst now = new Date();\n\n// 声明窗口起始时间变量，先给个默认值，下面按period具体计算\nlet windowStart;\n\n// 根据period参数，决定统计窗口从什么时候开始算\nif (period === \"day\") {\n  // 今天0点：把\"现在\"的时分秒都清零，只留年月日\n  windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());\n} else if (period === \"week\") {\n  // 本周一0点：now.getDay()返回0~6（0是周日），用来倒推回本周一\n  // (now.getDay() + 6) % 7 的意思是：把\"周日=0\"换算成\"距离周一有几天\"\n  const dayOfWeek = (now.getDay() + 6) % 7;\n  windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);\n} else {\n  // 默认按month处理：本月1号0点\n  windowStart = new Date(now.getFullYear(), now.getMonth(), 1);\n}\n\n// 拿到Read Ticket_Main传来的全部工单数据\nconst allTickets = $input.all();\n\n// 声明计数器，和Day43 Dashboard的Statistics Builder同一套逻辑\nlet total_ticket = 0;\nlet closed_ticket = 0;\nlet overdue_ticket = 0;\nlet reminder_count = 0;\nlet escalation_count = 0;\n\nfor (const ticket of allTickets) {\n  const data = ticket.json;\n\n  // 只统计\"创建时间落在这个窗口里\"的工单，是本次和Day43最大的区别\n  const createTime = new Date(data.create_time);\n  if (createTime < windowStart || createTime > now) {\n    continue;   // continue的意思是\"跳过这一条，直接看下一条\"，不计入统计\n  }\n\n  total_ticket++;\n\n  if (data.status === \"Closed\") {\n    closed_ticket++;\n  }\n\n  if (data.due_time && data.status !== \"Closed\") {\n    const dueTime = new Date(data.due_time);\n    if (dueTime < now) {\n      overdue_ticket++;\n    }\n  }\n\n  reminder_count += Number(data.reminder_count) || 0;\n\n  if (data.escalation_status === \"escalated\") {\n    escalation_count++;\n  }\n}\n\nconst open_ticket = total_ticket - closed_ticket;\n\n// sla_rate计算方式和Day43一致，同样要兜底total_ticket=0的情况\nconst sla_rate = total_ticket === 0\n  ? 100\n  : Math.round(((total_ticket - overdue_ticket) / total_ticket) * 100);\n\n// 用toISOString().slice(0,10)把日期对象转成\"yyyy-MM-dd\"格式的文本\n// 方便写进Google Sheets时是好读的日期字符串，而不是一串时间戳\nreturn [\n  {\n    json: {\n      period_type: period,\n      period_start: windowStart.toISOString().slice(0, 10),\n      period_end: now.toISOString().slice(0, 10),\n      total_ticket,\n      closed_ticket,\n      open_ticket,\n      overdue_ticket,\n      reminder_count,\n      escalation_count,\n      sla_rate\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c148f218-0217-4b0b-9f52-b011673fcf08",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a76e5cbf-6576-48f0-806e-0dc5244ba59d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e2c5d295d4579ae1385a94fad404afb6bd8c51ee7ad1d29bca6a9cdba76a62e8"
+  },
+  "nodeGroups": [],
+  "id": "akzlXl0pR27E5JNH",
+  "tags": []
+}
